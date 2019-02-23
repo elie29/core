@@ -4,6 +4,8 @@ declare(strict_types = 1);
 
 namespace Elie\Core\Router;
 
+use Psr\Container\ContainerInterface;
+
 /**
  * This is a router class that defines controller and action through
  * the url.
@@ -13,31 +15,36 @@ interface RouterInterface
 
     /**
      * Creates a router class to manage urls.
-     * config Router key should contains:
-     *  - controller:string:optional:Default application controller. home is the default value<br/>
-     *  - action:string:optional:Default application action. index is the default value<br/>
-     *  - protocol:string:optional: Any ProtocolInterface class.<br/>
-     *  - routes:array:required: it contains a list of expected routes to be resolved:<br/>
-     *  <code>
-     *      // the following route has no params
-     *      'home'=>array(<br/>
-     *          'namespace'=>string:optional (if no namespace is needed):Full namespace Controller\\Home\\<br/>
-     *          'controller'=>string:optional: if not set, default application controller is used<br/>
-     *          'action'=>string:optional: if not set, default application action is used<br/>
-     *          'params'=>array:optional: array of default key/value params<br/>
-     *      ),<br/>
-     *      // with *, routes accepts params
-     *      // all keys after product will be put in params (key/value pair)<br/>
-     *      'product/*'=>array(<br/>
-     *          'namespace'=>string:optional (if no namespace is needed):Full namespace Controller\\Product\\<br/>
-     *          'controller'=>string:optional: if not set, default application controller is used<br/>
-     *          'action'=>string:optional: if not set, default application action is used<br/>
-     *          'params'=>array:optional: array of key/value params<br/>
-     *      )<br/>
-     *  </code>
-     * @param array $params Default parameter for router class.
+     * config Router key should contains under core/router key:
+     * <code>
+     *  'core' => [
+     *    'router' => [
+     *      'namespace'=>string:optional:Default application namespace. empty is the default value
+     *      'controller'=>string:optional:Default application controller. home is the default value
+     *      'action'=>string:optional:Default application action. index is the default value
+     *      'protocol'=>string:optional:Any ProtocolInterface class.
+     *      'routes'=>array:required:contains a list of expected routes to be resolved
+     *      [
+     *        // the following route has no params
+     *        'home'=>[
+     *          'namespace'=>string:optional (if no specific namespace is needed):Full namespace Controller\\Home\\
+     *          'controller'=>string:optional: if not set, default application controller is used
+     *          'action'=>string:optional: if not set, default application action is used
+     *          'params'=>array:optional: array of default key/value params
+     *        ],
+     *        // with *, routes accepts params
+     *        // all keys after product will be put in params (key/value pair)
+     *        'product/*'=>[
+     *          'namespace'=>string:optional:Full namespace Controller\\Product\\
+     *          'controller'=>string:optional: if not set, default application controller is used
+     *          'action'=>string:optional: if not set, default application action is used
+     *          'params'=>array:optional: array of key/value params
+     *        ]
+     *      ]
+     *    ]
+     * ]
      */
-    public function __construct(array $params = []);
+    public function __construct(ContainerInterface $container);
 
     /**
      * Retrieve the controller in url or the default controller.

@@ -4,8 +4,8 @@ declare(strict_types = 1);
 
 namespace Elie\Core\Router\Protocol\Query;
 
-use Elie\Core\Router\RouterConst;
 use Elie\Core\Router\Protocol\ProtocolException;
+use Elie\Core\Router\RouterConst;
 use PHPUnit\Framework\TestCase;
 
 class QueryTest extends TestCase
@@ -26,51 +26,63 @@ class QueryTest extends TestCase
         parent::tearDown();
     }
 
-    public function testQueryWithEmptyRouteThrowsException(): void
+    public function testQueryWithEmptyRouteShouldHaveEmptyDefintions(): void
     {
-        $this->expectException(ProtocolException::class);
-        $this->expectExceptionMessage("'' did not match any routes");
+        $query = new Query();
 
-        new Query();
+        assertThat($query->getDefinition(), emptyArray());
     }
 
-    public function testQueryWithUnmatchedRouteThrowsException(): void
+    public function testPathWithUnmatchedRoutesShouldFoundNoDefinitions(): void
     {
-        $this->expectException(ProtocolException::class);
-        $this->expectExceptionMessage("'' did not match any routes");
-
-        new Query([
+        $query = new Query([
             'home' => [],
             'product/care/*' => [],
         ]);
+
+        assertThat($query->getDefinition(), emptyArray());
+    }
+
+    public function testPathWithNoFoundRoutesExtractPath(): void
+    {
+        $_GET[RouterConst::ROUTE] = 'product/care/item/view';
+
+        $query = new Query([
+            'home' => [],
+            'home/*' => [],
+        ]);
+
+        assertThat($query->getDefinition(), equalTo([
+            RouterConst::CONTROLLER => 'product',
+            RouterConst::ACTION => 'care',
+            RouterConst::PARAMS => [
+                'item' => 'view'
+            ]
+        ]));
     }
 
     public function testQueryShouldMatchFirstRouteWithNamespace(): void
     {
         $_GET[RouterConst::ROUTE] = 'home';
 
-        $route = new Query([
-            'home' => [
-                RouterConst::NAMESPACE => 'App\\'
-            ],
+        $query = new Query([
+            'home' => [RouterConst::NAMESPACE => 'App\\'],
             'home/*' => [],
         ]);
 
-        assertThat($route->getDefinition(), identicalTo([RouterConst::NAMESPACE => 'App\\']));
+        assertThat($query->getDefinition(), identicalTo([RouterConst::NAMESPACE => 'App\\']));
     }
 
     public function testQueryShouldMatchFirstRouteWithoutNamespace(): void
     {
         $_GET[RouterConst::ROUTE] = 'home';
 
-        $route = new Query([
+        $query = new Query([
             'home/*' => [], // first route found -> defintions contains params => []
-            'home' => [
-                RouterConst::NAMESPACE => 'App\\'
-            ],
+            'home' => [RouterConst::NAMESPACE => 'App\\'],
         ]);
 
-        assertThat($route->getDefinition(), identicalTo([RouterConst::PARAMS => []]));
+        assertThat($query->getDefinition(), identicalTo([RouterConst::PARAMS => []]));
     }
 
     public function testQueryWithStarRouteThrowsException(): void
@@ -80,7 +92,7 @@ class QueryTest extends TestCase
 
         $_GET[RouterConst::ROUTE] = 'home/item/'; // params should be even
 
-        $route = new Query([
+        $query = new Query([
             'home/*' => []
         ]);
     }
@@ -89,14 +101,12 @@ class QueryTest extends TestCase
     {
         $_GET[RouterConst::ROUTE] = 'home/item/care';
 
-        $route = new Query([
+        $query = new Query([
             'home/*' => [], // first route found -> params should be set to item=>care
-            'home' => [
-                RouterConst::NAMESPACE => 'App\\'
-            ],
+            'home' => [RouterConst::NAMESPACE => 'App\\'],
         ]);
 
-        assertThat($route->getDefinition(), identicalTo([RouterConst::PARAMS => [
+        assertThat($query->getDefinition(), identicalTo([RouterConst::PARAMS => [
             'item' => 'care'
         ]]));
     }
@@ -105,7 +115,7 @@ class QueryTest extends TestCase
     {
         $_GET[RouterConst::ROUTE] = 'home/item/care';
 
-        $route = new Query([
+        $query = new Query([
             'home/*' => [
                 RouterConst::PARAMS => [
                     'view' => 'detail'
@@ -113,7 +123,7 @@ class QueryTest extends TestCase
             ]
         ]);
 
-        assertThat($route->getDefinition(), identicalTo([RouterConst::PARAMS => [
+        assertThat($query->getDefinition(), identicalTo([RouterConst::PARAMS => [
             'view' => 'detail',
             'item' => 'care',
         ]]));
@@ -123,7 +133,7 @@ class QueryTest extends TestCase
     {
         $_GET[RouterConst::ROUTE] = 'home/item/care';
 
-        $route = new Query([
+        $query = new Query([
             'home/*' => [
                 RouterConst::PARAMS => [
                     'item' => 'detail'
@@ -131,7 +141,7 @@ class QueryTest extends TestCase
             ]
         ]);
 
-        assertThat($route->getDefinition(), identicalTo([RouterConst::PARAMS => [
+        assertThat($query->getDefinition(), identicalTo([RouterConst::PARAMS => [
             'item' => 'care',
         ]]));
     }

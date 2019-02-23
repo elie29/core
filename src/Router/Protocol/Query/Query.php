@@ -4,8 +4,8 @@ declare(strict_types = 1);
 
 namespace Elie\Core\Router\Protocol\Query;
 
-use Elie\Core\Router\RouterConst;
 use Elie\Core\Router\Protocol\AbstractProtocol;
+use Elie\Core\Router\RouterConst;
 
 /**
  * A protocol router that manages query string.

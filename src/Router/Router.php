@@ -6,6 +6,7 @@ namespace Elie\Core\Router;
 
 use Elie\Core\Router\Protocol\ProtocolInterface;
 use Elie\Core\Router\RouterInterface;
+use Psr\Container\ContainerInterface;
 
 /**
  * This class retrieves controller and action from the url.
@@ -20,10 +21,10 @@ class Router implements RouterInterface
     protected $protocol = RouterConst::QUERY_CLASSNAME;
 
     /**
-     * Namespace used to instanciate the controller.
+     * Default Namespace in case route did not specified one.
      * @var string
      */
-    protected $namespace;
+    protected $defaultNamespace = '';
 
     /**
      * Default controller, home if router has found nothing
@@ -42,31 +43,20 @@ class Router implements RouterInterface
      */
     protected $router;
 
-    public function __construct(array $params = [])
+    public function __construct(ContainerInterface $container)
     {
-        if (isset($params[RouterConst::CONTROLLER])) {
-            $this->defaultController = $params[RouterConst::CONTROLLER];
-        }
+        $config = $container->get('config');
 
-        if (isset($params[RouterConst::ACTION])) {
-            $this->defaultAction = $params[RouterConst::ACTION];
-        }
+        $params = $config['core']['router'] ?? [];
 
-        if (isset($params[RouterConst::PROTOCOL])) {
-            $this->protocol = $params[RouterConst::PROTOCOL];
-        }
-
-        $routes = $params[RouterConst::ROUTES] ?? [];
-
-        // Sets the router
-        $this->router = new $this->protocol($routes);
+        $this->setParams($params);
     }
 
     public function getNamespace(): string
     {
         $def = $this->router->getDefinition();
 
-        return $def[RouterConst::NAMESPACE] ?? '';
+        return $def[RouterConst::NAMESPACE] ?? $this->defaultNamespace;
     }
 
     public function getController(): string
@@ -114,6 +104,35 @@ class Router implements RouterInterface
     public function getImplodedParams(): string
     {
         return $this->implode($this->getParams());
+    }
+
+    /**
+     * Set params and router class.
+     *
+     * @param array $params CONTROLLER, ACTION, PROTOCOL NAMESPACE AND ROUTES
+     */
+    protected function setParams(array $params): void
+    {
+        if (isset($params[RouterConst::NAMESPACE])) {
+            $this->defaultNamespace = $params[RouterConst::NAMESPACE];
+        }
+
+        if (isset($params[RouterConst::CONTROLLER])) {
+            $this->defaultController = $params[RouterConst::CONTROLLER];
+        }
+
+        if (isset($params[RouterConst::ACTION])) {
+            $this->defaultAction = $params[RouterConst::ACTION];
+        }
+
+        if (isset($params[RouterConst::PROTOCOL])) {
+            $this->protocol = $params[RouterConst::PROTOCOL];
+        }
+
+        $routes = $params[RouterConst::ROUTES] ?? [];
+
+        // Sets the router
+        $this->router = new $this->protocol($routes);
     }
 
     /**

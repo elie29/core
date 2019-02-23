@@ -4,8 +4,8 @@ declare(strict_types = 1);
 
 namespace Elie\Core\Router\Protocol\Path;
 
-use Elie\Core\Router\RouterConst;
 use Elie\Core\Router\Protocol\ProtocolException;
+use Elie\Core\Router\RouterConst;
 use PHPUnit\Framework\TestCase;
 
 class PathTest extends TestCase
@@ -28,70 +28,101 @@ class PathTest extends TestCase
         parent::tearDown();
     }
 
-    public function testPathWithEmptyRouteThrowsException(): void
+    public function testPathWithEmptyRoutesShouldFoundNoDefinitions(): void
     {
-        $this->expectException(ProtocolException::class);
-        $this->expectExceptionMessage("'' did not match any routes");
+        $path = new Path();
 
-        new Path();
+        assertThat($path->getDefinition(), emptyArray());
     }
 
-    public function testPathWithUnmatchedRouteThrowsException(): void
+    public function testPathWithUnmatchedRoutesShouldFoundNoDefinitions(): void
     {
-        $this->expectException(ProtocolException::class);
-        $this->expectExceptionMessage("'' did not match any routes");
-
-        new Path([
+        $path = new Path([
             'home' => [],
             'product/care/*' => [],
         ]);
+
+        assertThat($path->getDefinition(), emptyArray());
+    }
+
+    public function testPathWithNoFoundRoutesExtractPath(): void
+    {
+        $_SERVER[RouterConst::PATH_INFO] = 'product/care/item/view';
+
+        $path = new Path([
+            'home' => [],
+            'home/*' => [],
+        ]);
+
+        assertThat($path->getDefinition(), hasEntry('controller', 'product'));
+        assertThat($path->getDefinition(), equalTo([
+            RouterConst::CONTROLLER => 'product',
+            RouterConst::ACTION => 'care',
+            RouterConst::PARAMS => [
+                'item' => 'view'
+            ]
+        ]));
+    }
+
+    public function testPathWithPartialRouteThrowsException(): void
+    {
+        $this->expectException(ProtocolException::class);
+        $this->expectExceptionMessage('URL parts are not set correctly');
+
+        $_SERVER[RouterConst::PATH_INFO] = 'product/care/item/view';
+
+        $path = new Path([
+            'home' => [],
+            'product/*' => [], // all params after product should be even not odd
+        ]);
+    }
+
+    public function testPathFromPathInfoWithNoSPecificDefintion(): void
+    {
+        $_SERVER[RouterConst::PATH_INFO] = 'home';
+
+        $path = new Path([
+            'home' => [],
+            'home/*' => [],
+        ]);
+
+        assertThat($path->getDefinition(), emptyArray());
     }
 
     public function testPathFromPathInfo(): void
     {
         $_SERVER[RouterConst::PATH_INFO] = 'home';
 
-        $route = new Path([
-            'home' => [
-                RouterConst::NAMESPACE => 'App\\'
-            ],
+        $path = new Path([
+            'home' => [RouterConst::NAMESPACE => 'App\\'],
             'home/*' => [],
         ]);
 
-        assertThat($route->getDefinition(), identicalTo([RouterConst::NAMESPACE => 'App\\']));
+        assertThat($path->getDefinition(), identicalTo([RouterConst::NAMESPACE => 'App\\']));
     }
 
     public function testPathFromRequestUri(): void
     {
         $_SERVER[RouterConst::REQUEST_URI] = 'home?query_params';
 
-        $route = new Path([
-            'home' => [
-                RouterConst::NAMESPACE => 'App\\'
-            ]
+        $path = new Path([
+            'home' => [RouterConst::NAMESPACE => 'App\\'],
         ]);
 
-        assertThat($route->getDefinition(), identicalTo([RouterConst::NAMESPACE => 'App\\']));
+        assertThat($path->getDefinition(), identicalTo([RouterConst::NAMESPACE => 'App\\']));
     }
 
     public function testPathFromRequestUriStarShoudlMatchWithParams(): void
     {
         $_SERVER[RouterConst::REQUEST_URI] = 'phpunit/phpunit/item/var';
 
-        $route = new Path([
-            'phpunit/phpunit' => [
-                RouterConst::NAMESPACE => 'App\\'
-            ],
-            'phpunit/phpunit/*' => [
-                RouterConst::NAMESPACE => 'App\\Foo\\'
-            ]
+        $path = new Path([
+            'phpunit/phpunit' => [RouterConst::NAMESPACE => 'App\\'],
+            'phpunit/phpunit/*' => [RouterConst::NAMESPACE => 'App\\Foo\\'],
         ]);
-
-        assertThat($route->getDefinition(), identicalTo([
+        assertThat($path->getDefinition(), identicalTo([
             RouterConst::NAMESPACE => 'App\\Foo\\',
-            RouterConst::PARAMS => [
-                'item' => 'var'
-            ]
+            RouterConst::PARAMS => ['item' => 'var']
         ]));
     }
 
@@ -99,16 +130,12 @@ class PathTest extends TestCase
     {
         $_SERVER[RouterConst::REQUEST_URI] = 'phpunit/phpunit';
 
-        $route = new Path([
-            'phpunit/phpunit/*' => [
-                RouterConst::NAMESPACE => 'App\\'
-            ],
-            'phpunit/phpunit' => [
-                RouterConst::NAMESPACE => 'App\\Foo\\'
-            ]
+        $path = new Path([
+            'phpunit/phpunit/*' => [RouterConst::NAMESPACE => 'App\\'],
+            'phpunit/phpunit' => [RouterConst::NAMESPACE => 'App\\Foo\\'],
         ]);
 
-        assertThat($route->getDefinition(), identicalTo([
+        assertThat($path->getDefinition(), identicalTo([
             RouterConst::NAMESPACE => 'App\\',
             RouterConst::PARAMS => [],
         ]));

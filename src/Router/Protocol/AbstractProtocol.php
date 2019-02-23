@@ -74,8 +74,36 @@ abstract class AbstractProtocol implements ProtocolInterface
             }
         }
 
-        // no route was found
-        throw new ProtocolException("'{$path}' did not match any routes");
+        // No route was found or matched, let's try controller/action/[params:id/value]
+        $this->explore($path);
+    }
+
+    /**
+     * Correct and clean the pattern.
+     * Trim, striptag and lowercase the url.
+     *
+     * @param string $pattern The pattern to be cleaned.
+     *
+     * @return string
+     */
+    protected function clear(string $pattern): string
+    {
+        // striptags and trim the pattern
+        $pattern = trim(strip_tags($pattern));
+
+        if ('' === $pattern) {
+            return '';
+        }
+
+        // A-Z, 0-9, - / _ . are ONLY authorized in URL
+        $pattern = preg_replace('#[^a-z0-9\-_/\.]+#i', '', $pattern);
+        // We remove / from both sides
+        $pattern = trim($pattern, '/');
+        // Replace multiple slashes in a url, such as /my//dir/url
+        $pattern = preg_replace('#\/+#', '/', $pattern);
+
+        // Lowercase the pattern
+        return strtolower($pattern);
     }
 
     /**
@@ -131,30 +159,25 @@ abstract class AbstractProtocol implements ProtocolInterface
     }
 
     /**
-     * Correct and clean the pattern.
-     * Trim, striptag and lowercase the url.
-     *
-     * @param string $pattern The pattern to be cleaned.
-     *
-     * @return string
+     * try controller/action/[params:id/value]
      */
-    protected function clear(string $pattern): string
+    protected function explore(string $path): void
     {
-        // striptags and trim the pattern
-        $pattern = trim(strip_tags($pattern));
+        $urlParts = explode('/', $path);
 
-        if ('' === $pattern) {
-            return '';
+        $controller = array_shift($urlParts);
+        if ($controller) {
+            $this->definition['controller'] = $controller;
         }
 
-        // A-Z, 0-9, - / _ . are ONLY authorized in URL
-        $pattern = preg_replace('#[^a-z0-9\-_/\.]+#i', '', $pattern);
-        // We remove / from both sides
-        $pattern = trim($pattern, '/');
-        // Replace multiple slashes in a url, such as /my//dir/url
-        $pattern = preg_replace('#\/+#', '/', $pattern);
+        $action = array_shift($urlParts);
+        if ($action) {
+            $this->definition['action'] = $action;
+        }
 
-        // Lowercase the pattern
-        return strtolower($pattern);
+        // All other parts are params
+        if ($urlParts) {
+            $this->definition['params'] = $this->extractParams($urlParts);
+        }
     }
 }
