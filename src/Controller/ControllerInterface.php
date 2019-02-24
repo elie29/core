@@ -50,7 +50,7 @@ interface ControllerInterface
      *
      * @param string $controller Controller needed.
      * @param string $action Action needed.
-     * @param array  $params Params needed optional, pairs key/value
+     * @param array  $params Optional params needed optional. key/value pairs
      */
     public function redirect($controller, $action, array $params = []): void;
 }
