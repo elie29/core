@@ -31,6 +31,7 @@ interface RenderInterface
 
     /**
      * Data would be rendered in json format.
+     * Cache will be disabled.
      *
      * @return RenderInterface
      */
@@ -38,6 +39,7 @@ interface RenderInterface
 
     /**
      * Data would be rendered in text format.
+     * Cache will be disabled.
      *
      * @return RenderInterface
      */

@@ -97,12 +97,14 @@ class Render implements RenderInterface
     public function jsonRendering(): self
     {
         $this->rendering = RenderConst::JSON;
+        $this->cache_time = -1;
         return $this;
     }
 
     public function textRendering(): self
     {
         $this->rendering = RenderConst::TEXT;
+        $this->cache_time = -1;
         return $this;
     }
 
@@ -200,6 +202,11 @@ class Render implements RenderInterface
         if (null === $template) {
             // View should be under controller/action.phtml
             $template = $this->router->getController() . '/' .  $this->router->getAction();
+        }
+
+        // Priority is to assigned data
+        if ($this->data) {
+            $data = array_merge($data, $this->data);
         }
 
         $output = $this->getViewContent($template, $data);
