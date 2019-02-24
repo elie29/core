@@ -33,7 +33,7 @@ class Render implements RenderInterface
      * @var int
      * <code>
      *     -1 : cache is deactivated.
-     *      0 : cache is with no time limit.
+     *      0 : cache with no time limit.
      *     >0 : cache is active until x seconds.
      * </code>
      */
