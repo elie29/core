@@ -53,12 +53,4 @@ abstract class AbstractController implements ControllerInterface
         header('Location: ' . $url);
         die();
     }
-
-    /**
-     * Get the class name.
-     */
-    public function __toString(): string
-    {
-        return get_class($this);
-    }
 }

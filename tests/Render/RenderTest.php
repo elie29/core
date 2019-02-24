@@ -67,6 +67,11 @@ class RenderTest extends TestCase
 
         assertThat($this->render->hasLayoutExpired(), is(false));
 
+        // Read content fromc cache
+        $content = $this->render->fetchLayout();
+        assertThat($content, containsString('<div>milk</div>'));
+
+        // delete cache file
         @unlink('tests/app/cache/layouts-layout.home.index');
     }
 
@@ -131,6 +136,9 @@ class RenderTest extends TestCase
 
         $cacheFile = 'cacheFileNameID'; // Should be unique.
         $cacheTime = 2;
+
+        // Cachetime should be >= 0
+        assertThat($this->render->hasTemplateExpired($cacheFile, -1), is(true));
 
         $content1 = $this->render->fetchTemplate(['item' => 'honey'], 'products/care', $cacheFile, $cacheTime);
         $content2 = $this->render->fetchTemplate([], null, $cacheFile, $cacheTime);
