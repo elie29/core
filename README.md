@@ -129,6 +129,8 @@ In the config file, we specified `Controllers\\` as a default namespace, but we 
 Each controller should implement Elie\Core\Controller or extends Elie\Core\AbstractController:
 
 ```php
+namespace Controllers;
+
 class HomeIndexController extends AbstractController
 {
 
@@ -157,7 +159,7 @@ class HomeIndexController extends AbstractController
 ### Create a template ###
 A template is not required, but in order to have a dynamic layout with several contents, we cas use `RenderInterface::fetchTemplate`. phtml templates should be under views_path.
 
-Let's change run method in order to fetch a template:
+Let's change `run` method in order to fetch a template:
 ```php
 public function run(array $params = []): array
 {
