@@ -4,13 +4,10 @@
         <meta charset="utf-8" />
         <meta name="author" content="Elie NEHME" />
         <meta name="robots" content="all" />
-        <?php
-        $uri = $this->router->getUrlPath();
-        ?>
-        <link rel="canonical" href="https://test.com/<?php echo $uri ?>" title="herbatica lebanon"/>
+        <link rel="canonical" href="https://test.com/<?php echo $uri ?>" title="URI"/>
     </head>
     <body>
-        <div><?php echo $this->item ?></div>
-        <div><?php echo $this->product ?></div>
+        <div><?php echo $description ?></div>
+        <div><?php echo $item ?></div>
     </body>
 </html>

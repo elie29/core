@@ -16,13 +16,14 @@ class RenderTest extends TestCase
      */
     protected $render;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+    }
+
     protected function tearDown(): void
     {
         \Mockery::close();
-
-        if ($this->render instanceof RenderInterface) {
-            $this->render->cleanCachedFile();
-        }
 
         parent::tearDown();
     }
@@ -38,7 +39,7 @@ class RenderTest extends TestCase
         $this->render = new Render($container);
 
         // cache should be deactivated
-        assertThat($this->render->hasExpired(), is(true));
+        assertThat($this->render->hasLayoutExpired(), is(true));
     }
 
     public function testRenderWithCacheConfig(): void
@@ -46,16 +47,27 @@ class RenderTest extends TestCase
         $this->setRender(true);
 
         // File does not exists
-        assertThat($this->render->hasExpired(), is(true));
+        assertThat($this->render->hasLayoutExpired(), is(true));
 
-        $this->render->assign(['product' => 'milk']);
-        $data = $this->render->fetchLayout(['item' => 'honey']);
+        // Global data
+        $this->render->assign(['description' => 'milk']);
 
-        assertThat($data, containsString('https://test.com/home/index'));
-        assertThat($data, containsString('<div>honey</div>'));
-        assertThat($data, containsString('<div>milk</div>'));
+        // Local data
+        $data = [
+            'description' => 'product', // won't override
+            'item' => 'honey',
+            'uri' => 'home/index',
+        ];
 
-        assertThat($this->render->hasExpired(), is(false));
+        $content = $this->render->fetchLayout($data);
+
+        assertThat($content, containsString('https://test.com/home/index'));
+        assertThat($content, containsString('<div>honey</div>'));
+        assertThat($content, containsString('<div>milk</div>'));
+
+        assertThat($this->render->hasLayoutExpired(), is(false));
+
+        @unlink('tests/app/cache/layouts-layout.home.index');
     }
 
     public function testRenderJsonData(): void
@@ -80,6 +92,18 @@ class RenderTest extends TestCase
         assertThat($data, is("honey\nmilk"));
     }
 
+    public function testRenderUnexistantLayoutThrowsException(): void
+    {
+        $this->expectException(RenderException::class);
+        $this->expectExceptionMessage('Can\'t find view script');
+
+        $this->setRender(false);
+
+        $this->render->changeLayout('layout-unexists');
+
+        $this->render->fetchLayout();
+    }
+
     public function testRenderUnexistantTemplateThrowsException(): void
     {
         $this->expectException(RenderException::class);
@@ -87,7 +111,7 @@ class RenderTest extends TestCase
 
         $this->setRender(false);
 
-        $data = $this->render->fetchTemplate(['item' => 'honey'], 'product/test');
+        $this->render->fetchTemplate([], 'product/test');
     }
 
     public function testRenderDefaultTemplate(): void
@@ -100,28 +124,21 @@ class RenderTest extends TestCase
         assertThat($data, containsString('<div>honey</div>'));
     }
 
-    public function testRenderDefaultTemplateWithoutRequiredData(): void
-    {
-        $this->setRender(false);
-
-        // default template: home/index
-        $data = $this->render->fetchTemplate();
-
-        assertThat($data, containsString('item is not set correctly'));
-    }
-
     public function testRenderViewTwiceWithCache(): void
     {
-        // layout cache could be deactivated
+        // without layout cache
         $this->setRender(false);
 
-        // set template cache time to 2 seconds
-        $this->render->setTemplateCacheTime(2);
+        $cacheFile = 'cacheFileNameID'; // Should be unique.
+        $cacheTime = 2;
 
-        $data1 = $this->render->fetchTemplate(['item' => 'honey'], 'products/care');
-        $data2 = $this->render->fetchTemplate(['item' => 'honey'], 'products/care');
+        $content1 = $this->render->fetchTemplate(['item' => 'honey'], 'products/care', $cacheFile, $cacheTime);
+        $content2 = $this->render->fetchTemplate([], null, $cacheFile, $cacheTime);
 
-        assertThat($data1, is($data2));
+        assertThat($content1, is($content2));
+        assertThat($this->render->hasTemplateExpired($cacheFile, $cacheTime), is(false));
+
+        @unlink('tests/app/cache/' . $cacheFile);
     }
 
     protected function setRender(bool $withCache): void

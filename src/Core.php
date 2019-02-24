@@ -36,7 +36,8 @@ class Core
      * Run the application by calling the route system,
      * the controller and the action.
      *
-     * This function will merge preRun, run and postRun datas.
+     * This function will merge preRun, run and postRun data.
+     *  and pass them to the fetchLayout Render method.
      *
      * @throws CoreException
      */
@@ -62,7 +63,7 @@ class Core
             $data = $this->getData($controller, $router);
         }
 
-        // Render the layout
+        // Render the layout with its specific data
         echo $this->getRender()->fetchLayout($data);
     }
 

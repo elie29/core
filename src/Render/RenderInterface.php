@@ -18,38 +18,16 @@ interface RenderInterface
      * 'core' => [
      *     'render' => [
      *          // all keys are optional
-     *         'layout' => 'string: layout name. Default to layout',
-     *         'views_path' => 'string: full path to the views folder',
+     *         'layout' => 'string:layout name. Default to layout:could be folder/layout_name',
+     *         'views_path' => 'string: full path to the views folder(layout/template)',
      *         'cache_path' => 'string: full path to the cache folder',
-     *         'cache_time' => 'int: default to -1 deactivated',
+     *         'cache_time' => 'int: default to -1 deactivated.Cache time for layout only',
      *         'clean_output' => 'bool: clean the output. Default to false',
      *     ]
      * ]
      * </code>
      */
     public function __construct(ContainerInterface $container);
-
-    /**
-     * Clean the latest cached file.
-     * This function must be called after a fetch, render
-     * or hasExpired calls.
-     * <code>
-     *     // We clean the cached layout before expiration.
-     *     if (! $this->hasExpired()) {
-     *         $this->cleanCachedFile();
-     *     }
-     * </code>
-     */
-    public function cleanCachedFile(): void;
-
-    /**
-     * Assign data key/value to the rendering.
-     *
-     * @param array $data Data to be assigned
-     *
-     * @return self
-     */
-    public function assign(array $data);
 
     /**
      * Data would be rendered in json format.
@@ -82,47 +60,78 @@ interface RenderInterface
     public function setCleanOutput(bool $cleanOutput);
 
     /**
+     * Assign data key/value to the rendering.
+     * Priority is given to this assigned data!
+     *
+     * @param array $data Data to be assigned for the whole layout/template.
+     *
+     * @return self
+     */
+    public function assign(array $data);
+
+    /**
+     * Change the current layout.
+     *
+     * @param string $layout layout_name or folder/layout_name under views_path.
+     *
+     * @return RenderInterface
+     */
+    public function changeLayout(string $layout);
+
+    /**
      * Sets the current layout cache time.
      *
      * @param int $cachetime Layout cache time.
      *
      * @return RenderInterface
      */
-    public function setLayoutCacheTime(int $cachetime);
+    public function changeLayoutCacheTime(int $cachetime);
 
     /**
-     * Sets the current template(s) cache time.
-     *
-     * @param int $cachetime Template cache time.
-     *
-     * @return RenderInterface
+     * Verify if layout cache has expired.
      */
-    public function setTemplateCacheTime(int $cachetime);
+    public function hasLayoutExpired(): bool;
 
     /**
-     * Verify if cache has expired.
+     * Verify if template cache has expired.
      *
-     * @param bool $isLayout Determines if we need to know that layout
-     *     has expired or controller/action view.
+     * @param string $cacheFile Cache filename for the current template.
+     * @param int $cacheTime Cache time for the current template. Should be unique.
      */
-    public function hasExpired(bool $isLayout = true): bool;
-
-    /**
-     * Render a specific template by providing a template name.
-     * Use cacheTemplateTime for specific template cache.
-     * data arguments are overiden by assigned data!
-     *
-     * @param string $template Template name without extension eg. [products/care/item]
-     * @param array  $data Data to be rendered.
-     */
-    public function fetchTemplate(array $data = [], $template = null): string;
+    public function hasTemplateExpired(string $cacheFile, int $cacheTime): bool;
 
     /**
      * If rendering is set to JSON we return JSON encode,
      * otherwise, we render the layout.
      * data arguments are overiden by assigned data!
      *
-     * @param array $data Data to be rendered.
+     * @param array $data Specific data to be rendered for the current layout.
      */
     public function fetchLayout(array $data = []): string;
+
+    /**
+     * Template is rendered in html format.
+     * Render a specific template by providing a template name.
+     * data arguments are overiden by assigned data!
+     *
+     * @param array  $data specific data to be rendered for the given template.
+     *  Not needed if template has not expired.
+     * @param string $template Template name without extension eg. [products/care/item].
+     *  if null, try controller/action template.
+     * @param string $cacheFile Cache filename for the current template. Should be unique.
+     * @param int $cacheTime Cache time for the current template.
+     *
+     * <code>
+     *  $data = [];
+     *  if ($render->hasTemplateExpired($cacheFile, $cacheTime)) {
+     *    $data = ['fetch data from database'];
+     *  }
+     * </code>
+     */
+    public function fetchTemplate(
+        array $data = [],
+        $template = null,
+        string $cacheFile = null,
+        int $cacheTime = -1
+    ): string;
 }

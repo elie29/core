@@ -39,18 +39,6 @@ class Render implements RenderInterface
      */
     protected $cache_time = -1;
 
-   /**
-     * Put the template content in a cache file.
-     * Useful in Ajax mode, when we render only the template.
-     * @var int
-     * <code>
-     *     -1 : cache is deactivated.
-     *      0 : cache is with no time limit.
-     *     >0 : cache is active until x seconds.
-     * </code>
-     */
-    protected $cache_template_time = -1;
-
     /**
      * Clean the output. Default to false.
      * @var bool
@@ -91,13 +79,7 @@ class Render implements RenderInterface
      * Cached file.
      * @var string
      */
-    private $cached_file = '';
-
-    /**
-     * Local data used in getLayout.
-     * @var array
-     */
-    private $local_data = [];
+    private $layout_cache_file = '';
 
     public function __construct(ContainerInterface $container)
     {
@@ -110,20 +92,6 @@ class Render implements RenderInterface
         $this->setParams($params);
 
         $this->htmlRendering();
-    }
-
-    public function cleanCachedFile(): void
-    {
-        if ($this->cached_file && file_exists($this->cached_file)) {
-            @unlink($this->cached_file);
-            $this->cached_file = '';
-        }
-    }
-
-    public function assign(array $data): self
-    {
-        $this->data = $this->data ? array_merge($this->data, $data) : $data;
-        return $this;
     }
 
     public function jsonRendering(): self
@@ -150,114 +118,56 @@ class Render implements RenderInterface
         return $this;
     }
 
-    public function setLayoutCacheTime(int $cachetime): self
+    public function assign(array $data): self
+    {
+        $this->data = $this->data ? array_merge($this->data, $data) : $data;
+        return $this;
+    }
+
+    public function changeLayout(string $layout): self
+    {
+        $this->layout = $layout;
+        return $this;
+    }
+
+    public function changeLayoutCacheTime(int $cachetime): self
     {
         $this->cache_time = $cachetime;
         return $this;
     }
 
-    public function setTemplateCacheTime(int $cachetime): self
-    {
-        $this->cache_template_time = $cachetime;
-        return $this;
-    }
-
-    public function hasExpired(bool $isLayout = true): bool
+    public function hasLayoutExpired(): bool
     {
         // Empty the cached file
-        $this->cached_file = '';
+        $this->layout_cache_file = '';
 
-        // Test cached time
-        $cacheTime = $isLayout ? $this->cache_time : $this->cache_template_time;
+        if ($this->cache_time < 0) {
+            // Cache is not used.
+            return true;
+        }
 
+        $layoutName = $this->layout . '.' .
+            $this->router->getController() . '.' .
+            $this->router->getAction() .
+            $this->router->getImplodedParams();
+
+        // We set the layout cached file for later use.
+        $this->layout_cache_file = $this->cache_path . str_replace(['/', '\\'], '-', $layoutName);
+
+        return $this->hasCacheExpired($this->layout_cache_file, $this->cache_time);
+    }
+
+    public function hasTemplateExpired(string $cacheFile, int $cacheTime): bool
+    {
         if ($cacheTime < 0) {
             // Cache is not used.
             return true;
         }
 
-        // We set the cached file for later use.
-        $this->setCachedFile($isLayout);
-
-        if (! file_exists($this->cached_file)) {
-            return true;
-        }
-
-        return $cacheTime > 0 && $cacheTime < (time() - filemtime($this->cached_file));
-    }
-
-    public function fetchTemplate(array $data = [], $template = null): string
-    {
-        if (null === $template) {
-            // template should be under controller/action.phtml
-            $template = $this->router->getController() . '/' . $this->router->getAction();
-        }
-
-        return $this->fetch($data, $template, false);
+        return $this->hasCacheExpired($this->cache_path . $cacheFile, $cacheTime);
     }
 
     public function fetchLayout(array $data = []): string
-    {
-        return $this->fetch($data, $this->layout, true);
-    }
-
-    /**
-     * Gives the ability to use $this->var in template.
-     *
-     * @param string $name Variable name.
-     *
-     * @return mixed
-     */
-    public function __get($name)
-    {
-        if (isset($this->local_data[$name])) {
-            return $this->local_data[$name];
-        }
-        // Development error
-        return "{$name} is not set correctly";
-    }
-
-    /**
-     * Determines if local variables is set.
-     *
-     * @param string $name Local variable name.
-     */
-    public function __isset($name): bool
-    {
-        return isset($this->local_data[$name]);
-    }
-
-    protected function setParams(array $params): void
-    {
-        if (isset($params[RenderConst::LAYOUT])) {
-            $this->layout = $params[RenderConst::LAYOUT];
-        }
-
-        $viewsPath = $params[RenderConst::VIEWS_PATH] ?? __DIR__;
-        $cachePath = $params[RenderConst::CACHE_PATH] ?? __DIR__;
-
-        if (isset($params[RenderConst::CACHE_TIME])) {
-            $this->setLayoutCacheTime($params[RenderConst::CACHE_TIME]);
-        }
-
-        if (isset($params[RenderConst::CLEAN_OUTPUT])) {
-            $this->setCleanOutput($params[RenderConst::CLEAN_OUTPUT]);
-        }
-
-        // Clean path
-        $this->views_path = $this->clean($viewsPath);
-        $this->cache_path = $this->clean($cachePath);
-    }
-
-    /**
-     * fetch the data depending on rendering mode.
-     *
-     * @param array  $data     Data to be rendered.
-     * @param string $view     The view to be setteled.
-     * @param bool   $isLayout Test if we settle a layout or a template.
-     *
-     * @throws RenderException
-     */
-    protected function fetch(array $data, $view, $isLayout): string
     {
         // Priority is to assigned data
         if ($this->data) {
@@ -272,44 +182,76 @@ class Render implements RenderInterface
             return implode("\n", $data);
         }
 
-        return $this->getLayoutContent($data, $view, $isLayout);
+        return $this->getHtmlContent($data);
+    }
+
+    public function fetchTemplate(
+        array $data = [],
+        $template = null,
+        string $cacheFile = null,
+        int $cacheTime = -1
+    ): string {
+
+        // If content has not expired
+        if ($cacheFile && ! $this->hasTemplateExpired($cacheFile, $cacheTime)) {
+            return file_get_contents($this->cache_path . $cacheFile);
+        }
+
+        if (null === $template) {
+            // View should be under controller/action.phtml
+            $template = $this->router->getController() . '/' .  $this->router->getAction();
+        }
+
+        $output = $this->getViewContent($template, $data);
+
+        // Write result if necessary
+        if ($cacheFile && $cacheTime >= 0) {
+            file_put_contents($this->cache_path . $cacheFile, $output, LOCK_EX);
+        }
+
+        // Return output
+        return $output;
     }
 
     /**
      * Render the provided view or get it from cache.
      *
-     * @param array  $data     Data to be rendered.
-     * @param string $view     The view to be setteled.
-     * @param bool   $isLayout Test if we settle a layout or a template.
+     * @param array $data Data to be rendered.
      *
      * @throws RenderException
      */
-    protected function getLayoutContent(array $data, $view, $isLayout): string
+    protected function getHtmlContent(array $data): string
+    {
+        // If content has not expired
+        if (! $this->hasLayoutExpired()) {
+            return file_get_contents($this->layout_cache_file);
+        }
+
+        $output = $this->getViewContent($this->layout, $data);
+
+        // Write result if necessary
+        if ($this->cache_time >= 0) {
+            file_put_contents($this->layout_cache_file, $output, LOCK_EX);
+        }
+
+        // Return output
+        return $output;
+    }
+
+    protected function getViewContent(string $view, array $data): string
     {
         // Define views script extension
         $view = $this->views_path . $view . '.phtml';
 
         // Check view script file presence
         if (! file_exists($view)) {
-            throw new RenderException('Can\'t find view script ' . $view);
+            throw new RenderException("Can't find view script  {$view}");
         }
-
-        // If content has not expired
-        if (! $this->hasExpired($isLayout)) {
-            return file_get_contents($this->cached_file);
-        }
-
-        // Save local data
-        $this->local_data = $data;
 
         // Start ouput buffering
         ob_start();
 
-        // include() instead of include_once() allows for multiple views with the same name
-        include $view;
-
-        // Set to empty
-        $this->local_data = [];
+        coreIncludeView($view, $data);
 
         // Get output buffer content, then clear it
         $output = ob_get_clean();
@@ -318,37 +260,29 @@ class Render implements RenderInterface
             $output = Text::cleanContent($output);
         }
 
-        // Write result if necessary
-        if ($this->cached_file) {
-            file_put_contents($this->cached_file, $output, LOCK_EX);
-        }
-
-        // Return output
         return $output;
     }
 
-    /**
-     * Set the cached file properly.
-     *
-     * @param bool $isLayout Determines if we are working on layout or view.
-     */
-    private function setCachedFile($isLayout): void
+    protected function setParams(array $params): void
     {
-        // Create the cached_file: if no cache path, we take views path
-        $path = $this->cache_path ? $this->cache_path : $this->views_path;
-
-        if ($isLayout) {
-            $this->cached_file = $this->layout . '.';
+        if (isset($params[RenderConst::LAYOUT])) {
+            $this->layout = $params[RenderConst::LAYOUT];
         }
 
-        // We add controller and action
-        $this->cached_file .=
-            $this->router->getController() . '.' .
-            $this->router->getAction() .
-            $this->router->getImplodedParams();
+        $viewsPath = $params[RenderConst::VIEWS_PATH] ?? __DIR__;
+        $cachePath = $params[RenderConst::CACHE_PATH] ?? __DIR__;
 
-        // Replace directory separator
-        $this->cached_file = $path . str_replace(['/', '\\'], '.', $this->cached_file);
+        if (isset($params[RenderConst::CACHE_TIME])) {
+            $this->changeLayoutCacheTime($params[RenderConst::CACHE_TIME]);
+        }
+
+        if (isset($params[RenderConst::CLEAN_OUTPUT])) {
+            $this->setCleanOutput($params[RenderConst::CLEAN_OUTPUT]);
+        }
+
+        // Clean path
+        $this->views_path = $this->clean($viewsPath);
+        $this->cache_path = $this->clean($cachePath);
     }
 
     /**
@@ -356,8 +290,29 @@ class Render implements RenderInterface
      *
      * @param string $path Path name.
      */
-    private function clean(string $path): string
+    protected function clean(string $path): string
     {
         return $path ? rtrim($path, '/\\') . '/' : '';
     }
+
+    protected function hasCacheExpired(string $cacheFile, int $cacheTime): bool
+    {
+        if (! file_exists($cacheFile)) {
+            // file does not exist
+            return true;
+        }
+
+        return $cacheTime > 0 && $cacheTime < (time() - filemtime($cacheFile));
+    }
+}
+
+/**
+ * include() instead of include_once() allows for multiple views with the same name
+ * isolate content
+ */
+function coreIncludeView($view, array $data)
+{
+    extract($data);
+
+    include $view;
 }
