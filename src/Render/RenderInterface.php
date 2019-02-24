@@ -97,10 +97,10 @@ interface RenderInterface
     /**
      * Verify if template cache has expired.
      *
-     * @param string $cacheFile Cache filename for the current template.
-     * @param int $cacheTime Cache time for the current template. Should be unique.
+     * @param string $cacheId Cache unique ID for the current template.
+     * @param int $cacheTime Cache time for the current template.
      */
-    public function hasTemplateExpired(string $cacheFile, int $cacheTime): bool;
+    public function hasTemplateExpired(string $cacheId, int $cacheTime): bool;
 
     /**
      * If rendering is set to JSON we return JSON encode,
@@ -120,12 +120,12 @@ interface RenderInterface
      *  Not needed if template has not expired.
      * @param string $template Template name without extension eg. [products/care/item].
      *  if null, try controller/action template.
-     * @param string $cacheFile Cache filename for the current template. Should be unique.
+     * @param string $cacheId Cache unique ID for the current template.
      * @param int $cacheTime Cache time for the current template.
      *
      * <code>
      *  $data = [];
-     *  if ($render->hasTemplateExpired($cacheFile, $cacheTime)) {
+     *  if ($render->hasTemplateExpired($cacheId, $cacheTime)) {
      *    $data = ['fetch data from database'];
      *  }
      * </code>
@@ -133,7 +133,7 @@ interface RenderInterface
     public function fetchTemplate(
         array $data = [],
         $template = null,
-        string $cacheFile = null,
+        string $cacheId = null,
         int $cacheTime = -1
     ): string;
 }

@@ -159,14 +159,14 @@ class Render implements RenderInterface
         return $this->hasCacheExpired($this->layout_cache_file, $this->cache_time);
     }
 
-    public function hasTemplateExpired(string $cacheFile, int $cacheTime): bool
+    public function hasTemplateExpired(string $cacheId, int $cacheTime): bool
     {
         if ($cacheTime < 0) {
             // Cache is not used.
             return true;
         }
 
-        return $this->hasCacheExpired($this->cache_path . $cacheFile, $cacheTime);
+        return $this->hasCacheExpired($this->cache_path . $cacheId, $cacheTime);
     }
 
     public function fetchLayout(array $data = []): string
@@ -190,13 +190,13 @@ class Render implements RenderInterface
     public function fetchTemplate(
         array $data = [],
         $template = null,
-        string $cacheFile = null,
+        string $cacheId = null,
         int $cacheTime = -1
     ): string {
 
         // If content has not expired
-        if ($cacheFile && ! $this->hasTemplateExpired($cacheFile, $cacheTime)) {
-            return file_get_contents($this->cache_path . $cacheFile);
+        if ($cacheId && ! $this->hasTemplateExpired($cacheId, $cacheTime)) {
+            return file_get_contents($this->cache_path . $cacheId);
         }
 
         if (null === $template) {
@@ -212,8 +212,8 @@ class Render implements RenderInterface
         $output = $this->getViewContent($template, $data);
 
         // Write result if necessary
-        if ($cacheFile && $cacheTime >= 0) {
-            file_put_contents($this->cache_path . $cacheFile, $output, LOCK_EX);
+        if ($cacheId && $cacheTime >= 0) {
+            file_put_contents($this->cache_path . $cacheId, $output, LOCK_EX);
         }
 
         // Return output
