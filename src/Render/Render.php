@@ -9,8 +9,8 @@ use Elie\Core\Router\RouterInterface;
 use Psr\Container\ContainerInterface;
 
 /**
- * This class render a template (layouts or views).
- * All template must have phtml extension.
+ * This class render a view (layout or template).
+ * All views must have phtml extension.
  */
 class Render implements RenderInterface
 {
