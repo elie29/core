@@ -4,7 +4,7 @@
 [![Coverage Status](https://coveralls.io/repos/github/elie29/core/badge.svg)](https://coveralls.io/github/elie29/core)
 
 ## Introduction
-A library to create a light straightforward MVC PHP project.
+PHP library to create a light straightforward project using PSR-11 container. 
 
 ## Installation ##
 
