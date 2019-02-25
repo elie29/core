@@ -202,6 +202,13 @@ protected function getMyTemplate(): string
 }
 ```
 
+`detail.phtml` file under `src/views/product` folder could be as follow:
+```html
+<h1>Product detail Template</h1>
+
+<div><?php echo htmlentities($item, ENT_QUOTES, 'UTF-8') ?></div>
+```
+
 ## Development Prerequisites ##
 
 ### Text file encoding ###
