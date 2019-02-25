@@ -4,7 +4,7 @@
 [![Coverage Status](https://coveralls.io/repos/github/elie29/core/badge.svg)](https://coveralls.io/github/elie29/core)
 
 ## Introduction
-PHP library to create a light straightforward project using PSR-11 container. 
+PHP library to create a light straightforward project using PSR-11 container.
 
 ## Installation ##
 
@@ -116,10 +116,11 @@ Example of a `layout.phtml`:
 <html lang="en">
 <head>
    <meta charset="utf-8">
-   <meta name="description" content="<?php echo htmlentities($description) ?>">
+   <meta name="description" content="<?php echo htmlentities($description, ENT_QUOTES, 'UTF-8') ?>">
 </head>
 <body>
-   <div><?php echo $content ?></div>
+   <!-- tplContent shoud display tags -->
+   <div><?php echo $tplContent ?></div>
 </body>
 </html>
 ```
@@ -145,13 +146,13 @@ class HomeIndexController extends AbstractController
    {
       $render = $this->container->get(RenderInterface::class);
 
-      // global variables for layout/templates
+      // global data for layout/templates
       $render->assign([
          'description' => 'first description',
       ]);
 
-      // layout variables only
-      return ['content' => 'my content'];
+      // layout specific data
+      return ['tplContent' => '<span>my content</span>'];
    }
 }
 ```
@@ -165,13 +166,13 @@ public function run(array $params = []): array
 {
    $render = $this->container->get(RenderInterface::class);
 
-   // global variables for layout/templates
+   // global data for layout/templates
    $render->assign([
       'description' => 'displayed description',
    ]);
 
-   // layout variables only
-   return ['content' => $this->getMyTemplate()];
+   // layout specific data
+   return ['tplContent' => $this->getMyTemplate()];
 }
 
 protected function getMyTemplate(): string
