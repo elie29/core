@@ -77,6 +77,12 @@ class TextTest extends TestCase
             true,
             "%2F\x3f"
         ];
+
+        yield 'sandwishing script' => [
+            "Java\0script",
+            false,
+            "Javascript"
+        ];
     }
 
     public function filterProvider(): \Generator
