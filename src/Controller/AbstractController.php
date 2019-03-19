@@ -6,6 +6,7 @@ namespace Elie\Core\Controller;
 
 use Elie\Core\Router\RouterInterface;
 use Psr\Container\ContainerInterface;
+use Elie\Core\Render\RenderInterface;
 
 /**
  * The controller name must be followed by the action e.g: HomeIndexController
@@ -46,11 +47,20 @@ abstract class AbstractController implements ControllerInterface
      */
     public function redirect($controller, $action, array $params = []): void
     {
-        /* @var $router RouterInterface */
-        $router = $this->container->get(RouterInterface::class);
+        $router = $this->getRouter();
         $url = $router->create($controller, $action, $params);
 
         header('Location: ' . $url);
         die();
+    }
+
+    public function getRender(): RenderInterface
+    {
+        return $this->container->get(RenderInterface::class);
+    }
+
+    public function getRouter(): RouterInterface
+    {
+        return  $this->container->get(RouterInterface::class);
     }
 }

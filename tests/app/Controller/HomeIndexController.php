@@ -12,6 +12,9 @@ class HomeIndexController extends AbstractController
 
     public function run(array $params = []): array
     {
-        return [];
+        return [
+            'action' => $this->getRouter()->getAction(),
+            'item' => $this->getRender()->fetchTemplate()
+        ];
     }
 }

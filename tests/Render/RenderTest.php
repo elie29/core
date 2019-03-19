@@ -124,9 +124,27 @@ class RenderTest extends TestCase
         $this->setRender(false);
 
         // default template: home/index
-        $data = $this->render->fetchTemplate(['item' => 'honey']);
+        $data = $this->render->fetchTemplate([
+            'action' => 'index',
+            'item' => 'honey'
+        ]);
 
         assertThat($data, containsString('<div>honey</div>'));
+    }
+
+    public function testRenderDefaultTemplateWithAssignedData(): void
+    {
+        $this->setRender(false);
+
+        $this->render->assign(['item' => 'tada']);
+
+        // default template: home/index
+        $data = $this->render->fetchTemplate([
+            'action' => 'index',
+            'item' => 'honey'
+        ]);
+
+        assertThat($data, containsString('<div>tada</div>'));
     }
 
     public function testRenderViewTwiceWithCache(): void

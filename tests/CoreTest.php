@@ -39,16 +39,17 @@ class CoreTest extends TestCase
     {
         $render = \Mockery::mock(RenderInterface::class);
         $render->expects('fetchLayout')->andReturn('<div>');
+        $render->expects('fetchTemplate')->andReturn('item');
 
         $router = \Mockery::mock(RouterInterface::class);
         $router->expects('getNamespace')->andReturn('App\\Controller\\');
         $router->expects('getController')->andReturn('home');
-        $router->expects('getAction')->andReturn('index');
+        $router->shouldReceive('getAction')->twice()->andReturn('index');
         $router->expects('getParams')->andReturn([]);
 
         $container = \Mockery::mock(ContainerInterface::class);
-        $container->expects('get')->with(RouterInterface::class)->andReturn($router);
-        $container->expects('get')->with(RenderInterface::class)->andReturn($render);
+        $container->shouldReceive('get')->with(RouterInterface::class)->twice()->andReturn($router);
+        $container->shouldReceive('get')->with(RenderInterface::class)->twice()->andReturn($render);
 
         $core = new Core($container);
 

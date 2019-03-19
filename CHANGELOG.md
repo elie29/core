@@ -7,7 +7,7 @@ All notable changes to this project will be documented in this file, in reverse 
 
 ### Added
 
-- Nothing.
+- [#1](https://github.com/elie29/core/issues/1) Add render and router to ControllerInterface.
 
 ### Changed
 

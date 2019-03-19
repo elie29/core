@@ -4,6 +4,8 @@ declare(strict_types = 1);
 
 namespace Elie\Core\Controller;
 
+use Elie\Core\Render\RenderInterface;
+use Elie\Core\Router\RouterInterface;
 use Psr\Container\ContainerInterface;
 
 /**
@@ -53,4 +55,18 @@ interface ControllerInterface
      * @param array  $params Optional params needed optional. key/value pairs
      */
     public function redirect($controller, $action, array $params = []): void;
+
+    /**
+     * Helper function to get the render from container.
+     *
+     * @return RenderInterface
+     */
+    public function getRender(): RenderInterface;
+
+    /**
+     * Helper function to get the router from container.
+     *
+     * @return RouterInterface
+     */
+    public function getRouter(): RouterInterface;
 }
