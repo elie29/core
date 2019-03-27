@@ -119,7 +119,7 @@ Example of a `layout.phtml`:
    <meta name="description" content="<?php echo htmlentities($description, ENT_QUOTES, 'UTF-8') ?>">
 </head>
 <body>
-   <!-- tplContent shoud display tags -->
+   <!-- tplContent should display tags -->
    <div><?php echo $tplContent ?></div>
 </body>
 </html>
